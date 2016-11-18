@@ -25,14 +25,6 @@ def elasticsearch_below50?
   Searchkick.server_below?("5.0.0-alpha1")
 end
 
-def elasticsearch_below20?
-  Searchkick.server_below?("2.0.0")
-end
-
-def elasticsearch_below14?
-  Searchkick.server_below?("1.4.0")
-end
-
 def mongoid2?
   defined?(Mongoid) && Mongoid::VERSION.starts_with?("2.")
 end
