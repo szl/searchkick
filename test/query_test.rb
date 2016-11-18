@@ -12,7 +12,7 @@ class QueryTest < Minitest::Test
   end
 
   def test_with_effective_min_score
-    min_score = elasticsearch_below50? ? 0.1 : 1
+    min_score = 1
     store_names ["Milk", "Milk2"]
     assert_search "milk", ["Milk"], body_options: {min_score: min_score}
   end
