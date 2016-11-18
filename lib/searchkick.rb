@@ -141,11 +141,7 @@ module Searchkick
   def self.search(term = nil, options = {}, &block)
     query = Searchkick::Query.new(nil, term, options)
     block.call(query.body) if block
-    if options[:execute] == false
-      query
-    else
-      query.execute
-    end
+    query
   end
 
   def self.multi_search(queries)

@@ -130,11 +130,7 @@ module Searchkick
     def search_model(searchkick_klass, term = nil, options = {}, &block)
       query = Searchkick::Query.new(searchkick_klass, term, options)
       yield(query.body) if block
-      if options[:execute] == false
-        query
-      else
-        query.execute
-      end
+      query
     end
 
     # reindex
