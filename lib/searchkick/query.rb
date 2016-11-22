@@ -220,104 +220,94 @@ module Searchkick
             match_all: {}
           }
         else
-          if options[:autocomplete]
-            payload = {
-              multi_match: {
-                fields: fields,
-                query: term,
-                analyzer: "searchkick_autocomplete_search"
-              }
-            }
-          else
-            queries = []
+          queries = []
 
-            misspellings =
-              if options.key?(:misspellings)
-                options[:misspellings]
-              elsif options.key?(:mispellings)
-                options[:mispellings] # why not?
-              else
-                true
-              end
-
-            if misspellings.is_a?(Hash) && misspellings[:below] && !@misspellings_below
-              @misspellings_below = misspellings[:below].to_i
-              misspellings = false
+          misspellings =
+            if options.key?(:misspellings)
+              options[:misspellings]
+            elsif options.key?(:mispellings)
+              options[:mispellings] # why not?
+            else
+              true
             end
 
-            if misspellings != false
-              edit_distance = (misspellings.is_a?(Hash) && (misspellings[:edit_distance] || misspellings[:distance])) || 1
-              transpositions =
-                if misspellings.is_a?(Hash) && misspellings.key?(:transpositions)
-                  {fuzzy_transpositions: misspellings[:transpositions]}
-                else
-                  {fuzzy_transpositions: true}
-                end
-              prefix_length = (misspellings.is_a?(Hash) && misspellings[:prefix_length]) || 0
-              default_max_expansions = @misspellings_below ? 20 : 3
-              max_expansions = (misspellings.is_a?(Hash) && misspellings[:max_expansions]) || default_max_expansions
-            end
-
-            fields.each do |field|
-              qs = []
-
-              factor = boost_fields[field] || 1
-              shared_options = {
-                query: term,
-                boost: 10 * factor
-              }
-
-              match_type =
-                if field.end_with?(".phrase")
-                  field = field.sub(/\.phrase\z/, ".analyzed")
-                  :match_phrase
-                else
-                  :match
-                end
-
-              shared_options[:operator] = operator if match_type == :match || below50?
-
-              if field == "_all" || field.end_with?(".analyzed")
-                shared_options[:cutoff_frequency] = 0.001 unless operator == "and" || misspellings == false
-                qs.concat [
-                  shared_options.merge(analyzer: "searchkick_search"),
-                  shared_options.merge(analyzer: "searchkick_search2")
-                ]
-              elsif field.end_with?(".exact")
-                f = field.split(".")[0..-2].join(".")
-                queries << {match: {f => shared_options.merge(analyzer: "keyword")}}
-              else
-                analyzer = field =~ /\.word_(start|middle|end)\z/ ? "searchkick_word_search" : "searchkick_autocomplete_search"
-                qs << shared_options.merge(analyzer: analyzer)
-              end
-
-              if misspellings != false && (match_type == :match || below50?)
-                qs.concat qs.map { |q| q.except(:cutoff_frequency).merge(fuzziness: edit_distance, prefix_length: prefix_length, max_expansions: max_expansions, boost: factor).merge(transpositions) }
-              end
-
-              # boost exact matches more
-              if field =~ /\.word_(start|middle|end)\z/ && searchkick_options[:word] != false
-                queries << {
-                  bool: {
-                    must: {
-                      bool: {
-                        should: qs.map { |q| {match_type => {field => q}} }
-                      }
-                    },
-                    should: {match_type => {field.sub(/\.word_(start|middle|end)\z/, ".analyzed") => qs.first}}
-                  }
-                }
-              else
-                queries.concat(qs.map { |q| {match_type => {field => q}} })
-              end
-            end
-
-            payload = {
-              dis_max: {
-                queries: queries
-              }
-            }
+          if misspellings.is_a?(Hash) && misspellings[:below] && !@misspellings_below
+            @misspellings_below = misspellings[:below].to_i
+            misspellings = false
           end
+
+          if misspellings != false
+            edit_distance = (misspellings.is_a?(Hash) && (misspellings[:edit_distance] || misspellings[:distance])) || 1
+            transpositions =
+              if misspellings.is_a?(Hash) && misspellings.key?(:transpositions)
+                {fuzzy_transpositions: misspellings[:transpositions]}
+              else
+                {fuzzy_transpositions: true}
+              end
+            prefix_length = (misspellings.is_a?(Hash) && misspellings[:prefix_length]) || 0
+            default_max_expansions = @misspellings_below ? 20 : 3
+            max_expansions = (misspellings.is_a?(Hash) && misspellings[:max_expansions]) || default_max_expansions
+          end
+
+          fields.each do |field|
+            qs = []
+
+            factor = boost_fields[field] || 1
+            shared_options = {
+              query: term,
+              boost: 10 * factor
+            }
+
+            match_type =
+              if field.end_with?(".phrase")
+                field = field.sub(/\.phrase\z/, ".analyzed")
+                :match_phrase
+              else
+                :match
+              end
+
+            shared_options[:operator] = operator if match_type == :match || below50?
+
+            if field == "_all" || field.end_with?(".analyzed")
+              shared_options[:cutoff_frequency] = 0.001 unless operator == "and" || misspellings == false
+              qs.concat [
+                shared_options.merge(analyzer: "searchkick_search"),
+                shared_options.merge(analyzer: "searchkick_search2")
+              ]
+            elsif field.end_with?(".exact")
+              f = field.split(".")[0..-2].join(".")
+              queries << {match: {f => shared_options.merge(analyzer: "keyword")}}
+            else
+              analyzer = field =~ /\.word_(start|middle|end)\z/ ? "searchkick_word_search" : "searchkick_autocomplete_search"
+              qs << shared_options.merge(analyzer: analyzer)
+            end
+
+            if misspellings != false && (match_type == :match || below50?)
+              qs.concat qs.map { |q| q.except(:cutoff_frequency).merge(fuzziness: edit_distance, prefix_length: prefix_length, max_expansions: max_expansions, boost: factor).merge(transpositions) }
+            end
+
+            # boost exact matches more
+            if field =~ /\.word_(start|middle|end)\z/ && searchkick_options[:word] != false
+              queries << {
+                bool: {
+                  must: {
+                    bool: {
+                      should: qs.map { |q| {match_type => {field => q}} }
+                    }
+                  },
+                  should: {match_type => {field.sub(/\.word_(start|middle|end)\z/, ".analyzed") => qs.first}}
+                }
+              }
+            else
+              queries.concat(qs.map { |q| {match_type => {field => q}} })
+            end
+          end
+
+          payload = {
+            dis_max: {
+              queries: queries
+            }
+          }
 
           if conversions_fields.present? && options[:conversions] != false
             shoulds = []
@@ -454,23 +444,15 @@ module Searchkick
       fields = options[:fields] || searchkick_options[:searchable]
       fields =
         if fields
-          if options[:autocomplete]
-            fields.map { |f| "#{f}.autocomplete" }
-          else
-            fields.map do |value|
-              k, v = value.is_a?(Hash) ? value.to_a.first : [value, options[:match] || searchkick_options[:match] || :word]
-              k2, boost = k.to_s.split("^", 2)
-              field = "#{k2}.#{v == :word ? 'analyzed' : v}"
-              boost_fields[field] = boost.to_f if boost
-              field
-            end
+          fields.map do |value|
+            k, v = value.is_a?(Hash) ? value.to_a.first : [value, options[:match] || searchkick_options[:match] || :word]
+            k2, boost = k.to_s.split("^", 2)
+            field = "#{k2}.#{v == :word ? 'analyzed' : v}"
+            boost_fields[field] = boost.to_f if boost
+            field
           end
         else
-          if options[:autocomplete]
-            (searchkick_options[:autocomplete] || []).map { |f| "#{f}.autocomplete" }
-          else
-            ["_all"]
-          end
+          ["_all"]
         end
       [boost_fields, fields]
     end

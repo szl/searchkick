@@ -58,12 +58,6 @@ module Searchkick
                 tokenizer: "standard",
                 filter: ["standard", "lowercase", "asciifolding", "searchkick_stemmer"]
               },
-              # https://github.com/leschenko/elasticsearch_autocomplete/blob/master/lib/elasticsearch_autocomplete/analyzers.rb
-              searchkick_autocomplete_index: {
-                type: "custom",
-                tokenizer: "searchkick_autocomplete_ngram",
-                filter: ["lowercase", "asciifolding"]
-              },
               searchkick_autocomplete_search: {
                 type: "custom",
                 tokenizer: "keyword",
@@ -150,13 +144,6 @@ module Searchkick
                 type: "mapping",
                 mappings: ["&=> and "]
               }
-            },
-            tokenizer: {
-              searchkick_autocomplete_ngram: {
-                type: "edgeNGram",
-                min_gram: 1,
-                max_gram: 50
-              }
             }
           }
         }
@@ -232,7 +219,7 @@ module Searchkick
         end
 
         mapping_options = Hash[
-          [:autocomplete, :suggest, :word, :text_start, :text_middle, :text_end, :word_start, :word_middle, :word_end, :highlight, :searchable, :filterable, :only_analyzed]
+          [:suggest, :word, :text_start, :text_middle, :text_end, :word_start, :word_middle, :word_end, :highlight, :searchable, :filterable, :only_analyzed]
             .map { |type| [type, (options[type] || []).map(&:to_s)] }
         ]
 

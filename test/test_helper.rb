@@ -266,7 +266,6 @@ class Product
       ["burger", "hamburger"],
       ["bandaid", "bandag"]
     ],
-    autocomplete: [:name],
     suggest: [:name, :color],
     conversions: [:conversions],
     personalize: :user_ids,
@@ -344,7 +343,7 @@ end
 
 class Animal
   searchkick \
-    autocomplete: [:name],
+    word_start: [:name],
     suggest: [:name],
     index_name: -> { "#{name.tableize}-#{Date.today.year}" }
     # wordnet: true
