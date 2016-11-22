@@ -54,6 +54,13 @@ module Searchkick
           end
           alias_method :reindex, :searchkick_reindex unless method_defined?(:reindex)
 
+          def searchkick_partial_reindex(method_name)
+            searchkick_index.import_scope(searchkick_klass, method_name: method_name)
+            searchkick_index.refresh
+            true
+          end
+          alias_method :partial_reindex, :searchkick_partial_reindex unless method_defined?(:partial_reindex)
+
           def clean_indices
             searchkick_index.clean_indices
           end
@@ -93,6 +100,12 @@ module Searchkick
         def reindex_async
           self.class.searchkick_index.reindex_record_async(self)
         end unless method_defined?(:reindex_async)
+
+        def partial_reindex(method_name)
+          self.class.searchkick_index.bulk_update([self], method_name)
+          self.class.searchkick_index.refresh
+          true
+        end unless method_defined?(:partial_reindex)
 
         def similar(options = {})
           self.class.searchkick_index.similar_record(self, options)

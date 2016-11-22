@@ -1213,6 +1213,21 @@ Product.where("id > 100000").find_in_batches do |batch|
 end
 ```
 
+Reindex a subset of attributes [master]
+
+```ruby
+class Product < ActiveRecord::Base
+  def search_prices
+    {
+      price: price,
+      sale_price: sale_price
+    }
+  end
+end
+
+Product.partial_reindex(:search_prices)
+```
+
 Remove old indices
 
 ```ruby
