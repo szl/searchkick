@@ -2,7 +2,14 @@ module Searchkick
   module Reindex; end # legacy for Searchjoy
 
   module Model
-    def searchkick(options = {})
+    def searchkick(**options)
+      unknown_keywords = options.keys - [
+        :synonyms, :suggest, :conversions, :personalize, :locations, :text_start, :text_middle, :text_end,
+        :word_start, :word_middle, :word_end, :highlight, :searchable, :filterable, :match, :routing,
+        :mappings, :settings, :index_name, :index_prefix
+      ]
+      raise ArgumentError, "unknown keywords: #{unknown_keywords.join(", ")}" if unknown_keywords.any?
+
       raise "Only call searchkick once per model" if respond_to?(:searchkick_index)
 
       Searchkick.models << self
@@ -20,7 +27,7 @@ module Searchkick
           [options[:index_prefix], model_name.plural, Searchkick.env].compact.join("_")
 
         class << self
-          def searchkick_search(term = nil, options = {}, &block)
+          def searchkick_search(term = "*", **options, &block)
             searchkick_index.search_model(self, term, options, &block)
           end
           alias_method Searchkick.search_method_name, :searchkick_search if Searchkick.search_method_name
@@ -43,8 +50,8 @@ module Searchkick
             class_variable_get(:@@searchkick_callbacks) && Searchkick.callbacks?
           end
 
-          def searchkick_reindex(options = {})
-            unless options[:accept_danger]
+          def searchkick_reindex(accept_danger: false, **options)
+            unless accept_danger
               if (respond_to?(:current_scope) && respond_to?(:default_scoped) && current_scope && current_scope.to_sql != default_scoped.to_sql) ||
                 (respond_to?(:queryable) && queryable != unscoped.with_default_scope)
                 raise Searchkick::DangerousOperation, "Only call reindex on models, not relations. Pass `accept_danger: true` if this is your intention."
@@ -65,8 +72,8 @@ module Searchkick
             searchkick_index.clean_indices
           end
 
-          def searchkick_import(options = {})
-            (options[:index] || searchkick_index).import_scope(searchkick_klass)
+          def searchkick_import(index: nil)
+            (index || searchkick_index).import_scope(searchkick_klass)
           end
 
           def searchkick_create_index
@@ -101,7 +108,7 @@ module Searchkick
           true
         end unless method_defined?(:partial_reindex)
 
-        def similar(options = {})
+        def similar(**options)
           self.class.searchkick_index.similar_record(self, options)
         end unless method_defined?(:similar)
 

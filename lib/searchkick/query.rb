@@ -12,13 +12,8 @@ module Searchkick
       :offset_value, :offset, :previous_page, :prev_page, :next_page, :first_page?, :last_page?,
       :out_of_range?, :hits, :response, :to_a, :first
 
-    def initialize(klass, term, options = {})
-      if term.is_a?(Hash)
-        options = term
-        term = "*"
-      else
-        term = term.to_s
-      end
+    def initialize(klass, term = "*", **options)
+      term = term.to_s
 
       if options[:emoji]
         term = EmojiParser.parse_unicode(term) { |e| " #{e.name} " }.strip
