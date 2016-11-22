@@ -76,12 +76,6 @@ module Searchkick
           def searchkick_index_options
             searchkick_index.index_options
           end
-
-          def searchkick_debug
-            warn "Use debug option with search method instead"
-
-            nil # do not return anything, as this is strictly used for manual debugging
-          end
         end
         extend Searchkick::Reindex # legacy for Searchjoy
 
