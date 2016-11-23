@@ -107,6 +107,8 @@ module Searchkick
           Searchkick::ReindexV2Job.perform_later(record.class.name, record.id.to_s)
         elsif defined?(Delayed::Job)
           Delayed::Job.enqueue Searchkick::ReindexJob.new(record.class.name, record.id.to_s)
+        elsif defined?(ApplicationJob)
+          Searchkick::ReindexV2Job.perform_later(record.class.name, record.id.to_s)
         else
           raise Searchkick::Error, "Job adapter not found"
         end
