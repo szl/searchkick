@@ -13,6 +13,12 @@ module Searchkick
       :out_of_range?, :hits, :response, :to_a, :first
 
     def initialize(klass, term = "*", **options)
+      unknown_keywords = options.keys - [:aggs, :body, :body_options, :boost, :boost_by, :boost_by_distance,
+        :boost_where, :conversions, :emoji, :execute, :fields, :highlight, :includes, :index_name,
+        :indices_boost, :limit, :load, :match, :misspellings, :offset, :operator, :order, :padding,
+        :page, :per_page, :request_params, :routing, :select, :similar, :smart_aggs, :suggest, :type, :where]
+      raise ArgumentError, "unknown keywords: #{unknown_keywords.join(", ")}" if unknown_keywords.any?
+
       term = term.to_s
 
       if options[:emoji]
@@ -97,7 +103,7 @@ module Searchkick
         per_page: @per_page,
         padding: @padding,
         load: @load,
-        includes: options[:include] || options[:includes],
+        includes: options[:includes],
         json: !@json.nil?,
         match_suffix: @match_suffix,
         highlighted_fields: @highlighted_fields || []
@@ -178,7 +184,7 @@ module Searchkick
     def prepare
       boost_fields, fields = set_fields
 
-      operator = options[:operator] || (options[:partial] ? "or" : "and")
+      operator = options[:operator] || "and"
 
       # pagination
       page = [options[:page].to_i, 1].max
@@ -190,17 +196,14 @@ module Searchkick
       load = options[:load].nil? ? true : options[:load]
 
       conversions_fields = Array(options[:conversions] || searchkick_options[:conversions]).map(&:to_s)
-      personalize_field  = searchkick_options[:personalize]
 
       all = term == "*"
 
-      @json = options[:json] || options[:body]
+      @json = options[:body]
       if @json
         payload = @json
       else
-        if options[:query]
-          payload = options[:query]
-        elsif options[:similar]
+        if options[:similar]
           payload = {
             more_like_this: {
               fields: fields,
@@ -340,7 +343,7 @@ module Searchkick
         multiply_filters = []
 
         set_boost_by(multiply_filters, custom_filters)
-        set_boost_where(custom_filters, personalize_field)
+        set_boost_where(custom_filters)
         set_boost_by_distance(custom_filters) if options[:boost_by_distance]
 
         if custom_filters.any?
@@ -471,14 +474,8 @@ module Searchkick
       multiply_filters.concat boost_filters(multiply_by || {})
     end
 
-    def set_boost_where(custom_filters, personalize_field)
+    def set_boost_where(custom_filters)
       boost_where = options[:boost_where] || {}
-      if options[:user_id] && personalize_field
-        boost_where[personalize_field] = options[:user_id]
-      end
-      if options[:personalize]
-        boost_where = boost_where.merge(options[:personalize])
-      end
       boost_where.each do |field, value|
         if value.is_a?(Array) && value.first.is_a?(Hash)
           value.each do |value_factor|

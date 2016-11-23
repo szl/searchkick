@@ -138,7 +138,7 @@ module Searchkick
     Thread.current[:searchkick_callbacks_enabled] = value
   end
 
-  def self.search(term = nil, options = {}, &block)
+  def self.search(term = "*", options = {}, &block)
     query = Searchkick::Query.new(nil, term, options)
     block.call(query.body) if block
     query

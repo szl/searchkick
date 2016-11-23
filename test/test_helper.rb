@@ -268,7 +268,6 @@ class Product
     ],
     suggest: [:name, :color],
     conversions: [:conversions],
-    personalize: :user_ids,
     locations: [:location, :multiple_locations],
     text_start: [:name],
     text_middle: [:name],

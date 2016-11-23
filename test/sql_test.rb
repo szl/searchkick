@@ -1,12 +1,6 @@
 require_relative "test_helper"
 
 class SqlTest < Minitest::Test
-  def test_partial
-    store_names ["Honey"]
-    assert_search "fresh honey", []
-    assert_search "fresh honey", ["Honey"], partial: true
-  end
-
   def test_operator
     store_names ["Honey"]
     assert_search "fresh honey", []
@@ -55,8 +49,10 @@ class SqlTest < Minitest::Test
   # body_options
 
   def test_body_options_should_merge_into_body
-    query = Product.search(query: {name: "milk"}, body_options: {min_score: 1.0}, execute: false)
+    store_names ["Milk", "Juice"]
+    query = Product.search("milk", body_options: {min_score: 1.0}, execute: false)
     assert_equal 1.0, query.body[:min_score]
+    assert_search "milk", ["Milk"], body_options: {min_score: 1.0}
   end
 
   # load
@@ -76,9 +72,9 @@ class SqlTest < Minitest::Test
     assert_equal "Product A", Product.search("product", load: false).first.name
   end
 
-  def test_load_false_with_include
+  def test_load_false_with_includes
     store_names ["Product A"]
-    assert_kind_of Hash, Product.search("product", load: false, include: [:store]).first
+    assert_kind_of Hash, Product.search("product", load: false, includes: [:store]).first
   end
 
   # select
@@ -184,9 +180,9 @@ class SqlTest < Minitest::Test
     assert_equal aisle, Product.search("product", load: false).first.aisle.to_hash
   end
 
-  def test_include
+  def test_includes
     skip unless defined?(ActiveRecord)
     store_names ["Product A"]
-    assert Product.search("product", include: [:store]).first.association(:store).loaded?
+    assert Product.search("product", includes: [:store]).first.association(:store).loaded?
   end
 end
